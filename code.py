@@ -4,7 +4,7 @@ import os
 
 
 PROC_COUNT = 20 # количество процессов
-NUM_OF_TICKS = 2 # количество тиков
+NUM_OF_TICKS = 2 # количество тиков 
 
 
 if not os.path.isfile("input.txt"):
