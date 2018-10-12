@@ -4,7 +4,7 @@ import os
 
 
 PROC_COUNT = 20 # количество процессов
-NUM_OF_TICKS = 2 # количество тиков 
+NUM_OF_TICKS = 2 # количество тиков
 
 
 if not os.path.isfile("input.txt"):
@@ -49,14 +49,25 @@ class ProcessorState:
 
 
 
-print ('\n\n=============== RR ====================')
+last_trace_msg = None
+def trace(msg, alg=False):
+    global last_trace_msg
+    if last_trace_msg == msg:
+        return
+    last_trace_msg = msg
+    tick = ProcessorState.tick_fifo if alg == 'fifo' else ProcessorState.tick
+    print(f'{tick}: {msg}')
+
+
+
+print('=============== RR ===============')
 
 while not q.empty():
     process, next_process = q.get(), q.queue[0] if q.qsize() else process
 
-    if process == ProcessorState.last:
+    if process.readinessTime > ProcessorState.tick and process == ProcessorState.last:
         diff = max(process.readinessTime - ProcessorState.tick, 0)
-        print(f'{ProcessorState.tick}: Пропущено тиков: {diff}')
+        trace(f'Пропущено тиков: {diff}')
         ProcessorState.tick = process.readinessTime
     elif process.readinessTime > ProcessorState.tick and not ProcessorState.last:
         q.put(process)
@@ -66,8 +77,7 @@ while not q.empty():
         q.put(process)
         continue
 
-    if process != next_process:
-        print(f'{ProcessorState.tick}: Процесс {process.number} исполняется на процессоре')
+    trace(f'Процесс {process.number} исполняется на процессоре')
 
     process.requiredAmount -= min(NUM_OF_TICKS, process.requiredAmount)
     ProcessorState.tick += min(NUM_OF_TICKS, process.requiredAmount)
@@ -76,24 +86,26 @@ while not q.empty():
     if process.requiredAmount > 0:
         q.put(process)
     else:
-        print(f'{ProcessorState.tick}: Процесс {process.number} завершил исполнение')
+        trace(f'Процесс {process.number} завершил исполнение')
 
 
 
 # FIFO
-print('\n\n=============== FIFO =======================')
+print('\n\n=============== FIFO ===============')
 
 for process in sorted(processes_fifo):
     diff = max(process.readinessTime - ProcessorState.tick_fifo, 0)
     if diff:
-        print(f'{ProcessorState.tick_fifo}: Пропущено тиков: {diff}')
+        trace(f'Пропущено тиков: {diff}', 'fifo')
         ProcessorState.tick_fifo = process.readinessTime
 
-    print(f'{ProcessorState.tick_fifo}: Процесс {process.number} начал исполнение на процессоре')
+    trace(f'Процесс {process.number} начал исполнение на процессоре', 'fifo')
 
     ProcessorState.tick_fifo += process.requiredAmount
 
-    print(f'{ProcessorState.tick_fifo}: Процесс {process.number} завершил исполнение')
+    trace(f'Процесс {process.number} завершил исполнение', 'fifo')
+
+
 print('\n\n==============================================================')
 print('============Статистические результаты моделирования===========')
 print('==============================================================')
