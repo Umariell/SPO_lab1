@@ -22,6 +22,7 @@ class Process:
         self.requiredAmount = requiredAmount
         self.priority = priority
 
+
     def __lt__(self, other):
         return self.priority < other.priority if self.readinessTime == other.readinessTime else self.readinessTime < other.readinessTime
 
@@ -110,9 +111,9 @@ print('\n\n==============================================================')
 print('============Статистические результаты моделирования===========')
 print('==============================================================')
 print('\nСуммарное кол-во затраченных тактов процессора для RR:', f'{ProcessorState.tick}' )
-print('Среднее время ожидания RR:', f'{}' )
-print('Среднее время выполнения RR:', f'{}' )
+print('Среднее время ожидания RR:', )
+print('Среднее время выполнения RR:',  )
 print('\nСуммарное кол-во затраченных тактов процессора для FIFO:', f'{ProcessorState.tick_fifo}' )
-print('Среднее время ожидания FIFO:', f'{}' )
-print('Среднее время выполнения FIFO:', f'{}' )
+print('Среднее время ожидания FIFO:',  )
+print('Среднее время выполнения FIFO:', )
 print('==============================================================')
