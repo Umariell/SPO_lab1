@@ -14,17 +14,46 @@ if not os.path.isfile("input.txt"):
             f.write(f"{n} {t1} {t2} {p}\n")
 
 
+
 class Process:
 
     def __init__(self, number, readinessTime, requiredAmount, priority):
         self.number = number
         self.readinessTime = readinessTime
+        self.origRequiredAmount = requiredAmount
         self.requiredAmount = requiredAmount
         self.priority = priority
-
+        self.arrivalTime = None
+        self.burstTime = None
 
     def __lt__(self, other):
         return self.priority < other.priority if self.readinessTime == other.readinessTime else self.readinessTime < other.readinessTime
+
+    def execute_rr(self):
+        # запоминаем время прибытия
+        if self.arrivalTime is None:
+            self.arrivalTime = ProcessorState.tick
+
+        trace(f'Процесс {self.number} исполняется на процессоре')
+
+        exec_ticks = min(NUM_OF_TICKS, self.requiredAmount)
+        self.requiredAmount -= exec_ticks
+        ProcessorState.tick += exec_ticks
+
+        # если процесс еще не завершил свое исполнение, возвращаем True
+        if self.requiredAmount > 0:
+            return True
+
+        # иначе запоминаем время, в которое этот процесс завершил свое исполнение
+        # выводим в лог сообщений и возвращаем False
+        self.burstTime = ProcessorState.tick
+
+        # подсчитываем статистику
+        ProcessorState.waiting_time_rr += self.burstTime - self.readinessTime - self.origRequiredAmount
+        ProcessorState.execution_time_rr += self.burstTime - self.readinessTime
+
+        trace(f'Процесс {self.number} завершил исполнение')
+        return False
 
 
 
@@ -48,6 +77,14 @@ class ProcessorState:
     tick_fifo = 0
     last = None
 
+    # RR
+    waiting_time_rr = 0
+    execution_time_rr = 0
+
+    # FIFO
+    waiting_time_fifo = 0
+    execution_time_fifo = 0
+
 
 
 last_trace_msg = None
@@ -64,7 +101,7 @@ def trace(msg, alg=False):
 print('=============== RR ===============')
 
 while not q.empty():
-    process, next_process = q.get(), q.queue[0] if q.qsize() else process
+    process = q.get()
 
     if process.readinessTime > ProcessorState.tick and process == ProcessorState.last:
         diff = max(process.readinessTime - ProcessorState.tick, 0)
@@ -78,16 +115,14 @@ while not q.empty():
         q.put(process)
         continue
 
-    trace(f'Процесс {process.number} исполняется на процессоре')
-
-    process.requiredAmount -= min(NUM_OF_TICKS, process.requiredAmount)
-    ProcessorState.tick += min(NUM_OF_TICKS, process.requiredAmount)
     ProcessorState.last = None
-
-    if process.requiredAmount > 0:
+    if process.execute_rr():
         q.put(process)
-    else:
-        trace(f'Процесс {process.number} завершил исполнение')
+
+
+ProcessorState.waiting_time_rr /= PROC_COUNT
+ProcessorState.execution_time_rr /= PROC_COUNT
+
 
 
 
@@ -103,17 +138,30 @@ for process in sorted(processes_fifo):
     trace(f'Процесс {process.number} начал исполнение на процессоре', 'fifo')
 
     ProcessorState.tick_fifo += process.requiredAmount
+    ProcessorState.waiting_time_fifo += ProcessorState.tick_fifo - process.readinessTime - process.requiredAmount
+    ProcessorState.execution_time_fifo += ProcessorState.tick_fifo - process.readinessTime
 
     trace(f'Процесс {process.number} завершил исполнение', 'fifo')
 
 
-print('\n\n==============================================================')
-print('============Статистические результаты моделирования===========')
-print('==============================================================')
-print('\nСуммарное кол-во затраченных тактов процессора для RR:', f'{ProcessorState.tick}' )
-print('Среднее время ожидания RR:', )
-print('Среднее время выполнения RR:',  )
-print('\nСуммарное кол-во затраченных тактов процессора для FIFO:', f'{ProcessorState.tick_fifo}' )
-print('Среднее время ожидания FIFO:',  )
-print('Среднее время выполнения FIFO:', )
-print('==============================================================')
+
+ProcessorState.waiting_time_fifo /= PROC_COUNT
+ProcessorState.execution_time_fifo /= PROC_COUNT
+
+
+
+print(f'''
+
+==============================================================
+============Статистические результаты моделирования===========
+==============================================================
+
+Суммарное кол-во затраченных тактов процессора для RR: {ProcessorState.tick}
+Среднее время ожидания RR: {ProcessorState.waiting_time_rr}
+Среднее время выполнения RR: {ProcessorState.execution_time_rr}
+
+Суммарное кол-во затраченных тактов процессора для FIFO: {ProcessorState.tick_fifo}
+Среднее время ожидания FIFO: {ProcessorState.waiting_time_fifo}
+Среднее время выполнения FIFO: {ProcessorState.execution_time_fifo}
+==============================================================
+''')
