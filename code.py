@@ -9,9 +9,10 @@ NUM_OF_TICKS = 2 # количество тиков
 
 if not os.path.isfile("input.txt"):
     with open ("input.txt", "w") as f:
+        f.write(f"Номер | Время готовности | Время исполнения | Приоритет\n")
         for i in range(1, PROC_COUNT + 1):
             n, t1, t2, p = i, randint(0, 100), randint(1, 10), randint(0, 1)
-            f.write(f"{n} {t1} {t2} {p}\n")
+            f.write(f"{n:^6} {t1:^18} {t2:^18} {p:^10}\n")
 
 
 
@@ -30,11 +31,21 @@ class Process:
         return self.priority < other.priority if self.readinessTime == other.readinessTime else self.readinessTime < other.readinessTime
 
     def execute_rr(self):
-        # запоминаем время прибытия
-        if self.arrivalTime is None:
-            self.arrivalTime = ProcessorState.tick
 
-        trace(f'Процесс {self.number} исполняется на процессоре')
+        tick = ProcessorState.tick
+        print(f'{tick:3}: ', end=' ')
+        print(f'{self.number:^4}| Готовы: ', end='')
+        for i in q.queue:
+            if i.readinessTime > tick:
+                break
+            print(i.number, end=' ')
+        print('| Блокированы: ', end=' ')
+        for i in q.queue:
+            if i.readinessTime <= tick:
+                continue
+            print(i.number, end=' ')
+        print('')
+
 
         exec_ticks = min(NUM_OF_TICKS, self.requiredAmount)
         self.requiredAmount -= exec_ticks
@@ -60,6 +71,7 @@ class Process:
 processes = []
 processes_fifo = []
 with open ("input.txt", "r") as f:
+    f.readline()
     for line in f.readlines ():
         n, t1, t2, p = map(int, line.split())
         processes.append(Process(n, t1, t2, p))
@@ -94,7 +106,7 @@ def trace(msg, alg=False):
         return
     last_trace_msg = msg
     tick = ProcessorState.tick_fifo if alg == 'fifo' else ProcessorState.tick
-    print(f'{tick}: {msg}')
+    print(f'{tick:3}: {msg}')
 
 
 
