@@ -37,7 +37,7 @@ class Process:
         print(f'{self.number:^4}| Готовы: ', end='')
         for i in q.queue:
             if i.readinessTime > tick:
-                break
+                continue
             print(i.number, end=' ')
         print('| Блокированы: ', end=' ')
         for i in q.queue:
